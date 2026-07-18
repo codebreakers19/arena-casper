@@ -14,7 +14,7 @@ export interface ArenaConfig {
   alphaKeyPath?: string;
   betaKeyPath?: string;
   verifierKeyPath?: string;
-  matchDurationBlocks: number;
+  matchDurationMs: number;
   matchStartBudget: number;
   matchPollMs: number;
   tickMs: number;
@@ -28,6 +28,8 @@ export interface MatchState {
   verifier: string;
   startBlock: number;
   endBlock: number;
+  startTimeMs?: number;
+  endTimeMs?: number;
   startBudget: number;
   status: MatchStatus;
   valueA: number;
@@ -38,6 +40,8 @@ export interface MatchState {
   createDeployHash?: string;
   startDeployHash?: string;
   settleDeployHash?: string;
+  marketId?: string;
+  rulesHash?: string;
 }
 
 export interface TradeRecord {
@@ -52,6 +56,9 @@ export interface TradeRecord {
   reasoning: string;
   reasoningHash: string;
   evidenceHash: string;
+  evidenceUrl?: string;
+  source?: string;
+  confidence?: number;
   blockTime: number;
   deployHash: string;
 }
@@ -81,4 +88,26 @@ export interface PricePoint {
   price: number;
   source: string;
   timestamp: string;
+  evidence?: Record<string, unknown>;
+}
+
+export interface AgentDecision {
+  action: TradeAction;
+  allocationBps: number;
+  confidence: number;
+  thesis: string;
+  riskFlags: string[];
+  rawResponse: string;
+}
+
+export interface EvidenceRecord {
+  hash: string;
+  createdAt: string;
+  matchId: number;
+  agentId: AgentId;
+  source: string;
+  market: PricePoint;
+  decision: Omit<AgentDecision, "rawResponse">;
+  rawModelResponse: string;
+  portfolioBefore: Portfolio;
 }

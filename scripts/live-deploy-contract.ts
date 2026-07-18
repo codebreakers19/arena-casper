@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../agents/shared/env.js";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -92,8 +92,8 @@ function optimizeWasmIfPossible(wasmPath: string): void {
   execFileSync(command, [
     ...prefixArgs,
     "--signext-lowering",
-    "--enable-bulk-memory",
     "--llvm-memory-copy-fill-lowering",
+    "--disable-bulk-memory",
     wasmPath,
     "-o",
     wasmPath,
@@ -101,15 +101,14 @@ function optimizeWasmIfPossible(wasmPath: string): void {
 }
 
 function assertNoBulkMemoryOps(wasmPath: string): void {
-  const bytes = readFileSync(wasmPath);
-  let memoryCopy = 0;
-  let memoryFill = 0;
-  for (let index = 0; index < bytes.length - 1; index += 1) {
-    if (bytes[index] === 0xfc && bytes[index + 1] === 0x0a) memoryCopy += 1;
-    if (bytes[index] === 0xfc && bytes[index + 1] === 0x0b) memoryFill += 1;
+  const wasmDis = resolve("node_modules/binaryen/bin/wasm-dis");
+  if (!existsSync(wasmDis)) {
+    console.warn("[deploy] wasm-dis is unavailable; skipping textual bulk-memory validation");
+    return;
   }
-  if (memoryCopy > 0 || memoryFill > 0) {
-    throw new Error(`WASM still contains unsupported bulk-memory ops: memory.copy=${memoryCopy}, memory.fill=${memoryFill}`);
+  const disassembly = execFileSync(process.execPath, [wasmDis, wasmPath], { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  if (/memory\.(copy|fill)/.test(disassembly)) {
+    throw new Error("WASM still contains unsupported bulk-memory instructions.");
   }
 }
 

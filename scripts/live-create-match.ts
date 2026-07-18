@@ -3,6 +3,9 @@ import { agentAccount, loadConfig } from "../agents/shared/config.js";
 
 const config = loadConfig();
 if (config.mode !== "live") throw new Error("Set ARENA_MODE=live before running live scripts.");
+if (!process.env.MATCH_ID || !Number.isSafeInteger(Number(process.env.MATCH_ID)) || Number(process.env.MATCH_ID) < 1) {
+  throw new Error("MATCH_ID must be the next on-chain match ID for this contract. Use 1 for a newly deployed contract.");
+}
 
 const client = createArenaClient(config);
 const match = await client.createMatch({
@@ -10,7 +13,7 @@ const match = await client.createMatch({
   agentA: agentAccount("alpha"),
   agentB: agentAccount("beta"),
   verifier: agentAccount("verifier"),
-  durationBlocks: config.matchDurationBlocks,
+  durationBlocks: config.matchDurationMs,
   startBudget: config.matchStartBudget
 });
 

@@ -1,5 +1,6 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { arenaDataPath } from "./storage.js";
 import type { ArenaEvent, MatchState, TradeRecord } from "./types.js";
 
 export interface MockLedgerData {
@@ -19,7 +20,7 @@ const defaultData: MockLedgerData = {
 };
 
 export class MockLedger {
-  constructor(private readonly path = ".arena/mock-ledger.json") {}
+  constructor(private readonly path = arenaDataPath("mock-ledger.json")) {}
 
   async read(): Promise<MockLedgerData> {
     try {

@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "../agents/shared/env.js";
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 

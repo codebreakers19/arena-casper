@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./env.js";
 import type { ArenaConfig } from "./types.js";
 
 function numberEnv(name: string, fallback: number): number {
@@ -22,7 +22,7 @@ export function loadConfig(): ArenaConfig {
     alphaKeyPath: process.env.ARENA_ALPHA_SECRET_KEY ?? process.env.AGENT_ALPHA_KEY_PATH,
     betaKeyPath: process.env.ARENA_BETA_SECRET_KEY ?? process.env.AGENT_BETA_KEY_PATH,
     verifierKeyPath: process.env.ARENA_VERIFIER_SECRET_KEY ?? process.env.VERIFIER_KEY_PATH,
-    matchDurationBlocks: numberEnv("MATCH_DURATION_BLOCKS", 20),
+    matchDurationMs: numberEnv("MATCH_DURATION_MS", 600_000),
     matchStartBudget: numberEnv("MATCH_START_BUDGET", 1_000_000_000_000),
     matchPollMs: numberEnv("MATCH_POLL_MS", 5_000),
     tickMs: numberEnv("TICK_MS", mode === "live" ? 120_000 : 750)

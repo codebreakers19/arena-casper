@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import type { ArenaConfig, ArenaEvent, MatchState, TradeRecord } from "./types.js";
 import { deployHash, sha256 } from "./hash.js";
 import { MockLedger, type MockLedgerData } from "./mock-ledger.js";
+import { arenaDataPath } from "./storage.js";
 
 export interface ArenaClient {
   createMatch(args: {
@@ -149,9 +150,13 @@ export class MockArenaClient implements ArenaClient {
 }
 
 class LiveArenaClient implements ArenaClient {
-  private readonly ledger = new MockLedger(".arena/live-ledger.json");
+  private readonly ledger: MockLedger;
 
-  constructor(private readonly config: ArenaConfig) {}
+  constructor(private readonly config: ArenaConfig) {
+    // A live dashboard cache is only a projection of successful deploys. Keep it
+    // separate for each contract so an earlier deployment can never pollute it.
+    this.ledger = new MockLedger(arenaDataPath(`live-ledger-${ledgerContractId(config.contractHash)}.json`));
+  }
 
   async createMatch(args: {
     creator: string;
@@ -163,17 +168,22 @@ class LiveArenaClient implements ArenaClient {
   }): Promise<MatchState> {
     const data = await this.ledger.read();
     const deploy = await this.callContract("create_match", await this.args({
-      creator: ["string", args.creator],
-      agent_a: ["string", args.agentA],
-      agent_b: ["string", args.agentB],
-      verifier: ["string", args.verifier],
-      current_block: ["u64", data.block],
-      duration_blocks: ["u64", args.durationBlocks],
-      start_budget: ["u64", args.startBudget]
+      agent_a: ["key", args.agentA],
+      agent_b: ["key", args.agentB],
+      verifier: ["key", args.verifier],
+      duration_ms: ["u64", args.durationBlocks],
+      start_budget: ["u512", args.startBudget],
+      market_id: ["string", "CSPR/sCSPR/TREASURY"],
+      rules_hash: ["string", sha256("arena-v2:virtual-portfolio:max-allocation-2500")]
     }), "creator");
 
     return this.ledger.mutate((data) => {
-      const id = data.nextMatchId++;
+      const configuredId = positiveIntegerEnv("MATCH_ID");
+      const id = data.matches.length === 0 ? (configuredId ?? data.nextMatchId) : data.nextMatchId;
+      if (data.matches.some((match) => match.id === id)) {
+        throw new Error(`Match ${id} already exists in this contract cache. Set MATCH_ID to the next on-chain match ID.`);
+      }
+      data.nextMatchId = Math.max(data.nextMatchId, id + 1);
       const match: MatchState = {
         id,
         creator: args.creator,
@@ -199,8 +209,6 @@ class LiveArenaClient implements ArenaClient {
     const data = await this.ledger.read();
     const deploy = await this.callContract("start_match", await this.args({
       match_id: ["u64", matchId],
-      caller: ["string", caller],
-      current_block: ["u64", data.block + 1]
     }), roleForCaller(this.config, caller));
 
     return this.ledger.mutate((data) => {
@@ -220,15 +228,12 @@ class LiveArenaClient implements ArenaClient {
     const data = await this.ledger.read();
     const deploy = await this.callContract("record_trade", await this.args({
       match_id: ["u64", trade.matchId],
-      caller: ["string", trade.agent],
       action: ["string", trade.action],
-      pair: ["string", trade.pair],
-      amount: ["u64", trade.amount],
-      price: ["u64", trade.price],
-      portfolio_value: ["u64", trade.portfolioValue],
+      amount: ["u512", trade.amount],
+      price: ["u512", trade.price],
+      portfolio_value: ["u512", trade.portfolioValue],
       reasoning_hash: ["string", trade.reasoningHash],
-      evidence_hash: ["string", trade.evidenceHash],
-      current_block: ["u64", data.block + 1]
+      evidence_hash: ["string", trade.evidenceHash]
     }), trade.agentId);
 
     return this.ledger.mutate((data) => {
@@ -252,13 +257,9 @@ class LiveArenaClient implements ArenaClient {
     settlementHash: string;
   }): Promise<MatchState> {
     const data = await this.ledger.read();
-    const currentMatch = mustFindMatch(data.matches, args.matchId);
+    mustFindMatch(data.matches, args.matchId);
     const deploy = await this.callContract("settle_match", await this.args({
       match_id: ["u64", args.matchId],
-      caller: ["string", args.caller],
-      current_block: ["u64", Math.max(data.block + 1, currentMatch.endBlock)],
-      final_value_a: ["u64", args.finalValueA],
-      final_value_b: ["u64", args.finalValueB],
       settlement_hash: ["string", args.settlementHash]
     }), "verifier");
 
@@ -293,13 +294,14 @@ class LiveArenaClient implements ArenaClient {
     return data.events.slice(afterIndex);
   }
 
-  private async args(values: Record<string, ["string" | "u64" | "u512", string | number]>): Promise<any> {
+  private async args(values: Record<string, ["string" | "u64" | "u512" | "key", string | number]>): Promise<any> {
     const sdk = await casperSdk();
     const mapped: Record<string, any> = {};
     for (const [key, [type, value]] of Object.entries(values)) {
       if (type === "string") mapped[key] = sdk.CLValue.newCLString(String(value));
       if (type === "u64") mapped[key] = sdk.CLValue.newCLUint64(toWholeString(value));
       if (type === "u512") mapped[key] = sdk.CLValue.newCLUInt512(toWholeString(value));
+      if (type === "key") mapped[key] = sdk.CLValue.newCLPublicKey(sdk.PublicKey.fromHex(String(value)));
     }
     return sdk.Args.fromMap(mapped);
   }
@@ -320,7 +322,7 @@ class LiveArenaClient implements ArenaClient {
     header.account = key.publicKey;
     header.chainName = this.config.chainName;
     const payment = sdk.ExecutableDeployItem.standardPayment(
-      process.env.PAYMENT_MOTES ?? process.env.ARENA_PAYMENT_MOTES ?? "3000000000",
+      process.env.PAYMENT_MOTES ?? process.env.ARENA_PAYMENT_MOTES ?? "50000000000",
     );
     const deploy = sdk.Deploy.makeDeploy(header, payment, session);
     deploy.sign(key);
@@ -352,6 +354,15 @@ class LiveArenaClient implements ArenaClient {
   private keyAlgorithm(sdk: any): any {
     return process.env.ARENA_KEY_ALGORITHM === "secp256k1" ? sdk.KeyAlgorithm.SECP256K1 : sdk.KeyAlgorithm.ED25519;
   }
+}
+
+function ledgerContractId(contractHash: string | undefined): string {
+  return (contractHash ?? "unconfigured").replace(/^contract-/, "").replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
+function positiveIntegerEnv(name: string): number | undefined {
+  const value = Number(process.env[name]);
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
 async function casperSdk(): Promise<any> {
