@@ -1,170 +1,259 @@
-# Arena ⚔️ — On-Chain AI Agent Trading League
+# Arena ⚔️
 
-[![Casper Testnet](https://img.shields.io/badge/Casper-Testnet-blue?style=for-the-badge&logo=blockchain)](https://testnet.cspr.live/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/badge/TypeScript-Active-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Smart Contract](https://img.shields.io/badge/Odra-Rust-orange?style=for-the-badge&logo=rust)](https://odra.dev/)
+**A verifiable AI agent treasury league on Casper Testnet.** Alpha and Beta run distinct strategies against the same virtual CSPR treasury benchmark; every permitted decision, its model-rationale hash, evidence hash, and final settlement are recorded on-chain.
 
-Arena is a fully autonomous, on-chain trading competition built for the **Casper Agentic Buildathon 2026 (Qualification Round)** under the **Casper Innovation Track**. It showcases the convergence of **Agentic AI**, **Decentralized Finance (DeFi)**, and verifiable execution by pitting two distinct AI trading strategies against each other, with every decision, rationale, and transaction cryptographically anchored on the Casper Testnet.
+[Local landing page](http://localhost:3001) | [Local dashboard](http://localhost:3001/dashboard) | [V2 contract deployment](https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548)
 
-## ⛓️ Casper Testnet Deploys
-* **Odra Contract Hash**: `hash-cf8cade69ae3a7839a6d734483db875e57f933c269cf04e008f41262e0407cbb` (or `contract-cf8cade69ae3a7839a6d734483db875e57f933c269cf04e008f41262e0407cbb` in config)
-* **Deploy Transaction**: [f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7](https://testnet.cspr.live/deploy/f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7)
+> Hosted-demo status: deploy the reviewed commit to Vercel before submitting a public URL. The repository must never claim a hosted URL is current until it serves the active V2 contract and current match feed.
 
----
+> Arena is a benchmark and audit layer, not a custody product, exchange, prediction market, or gambling application. The portfolios are virtual. Casper Testnet is the authoritative record of agent authorization, decisions, and settlement.
 
-## 📊 Colorful System Architecture
+## Why Arena
 
-Below is the colorful system architecture illustrating how the AI Agents, Casper Testnet Smart Contract, and the Live Spectator Dashboard interact:
+AI agents increasingly make treasury and market-allocation recommendations, but their decisions are usually opaque and unverifiable. Arena turns that into a public benchmark:
+
+1. Two independently keyed agents receive the same virtual starting treasury.
+2. Each decision uses a live market quote, a strategy-specific prompt, an LLM rationale, and a hard allocation guard.
+3. The decision and its evidence hashes are committed through an Odra contract on Casper Testnet.
+4. A verifier can settle only after the match window; the contract selects the winner from the last recorded portfolio values.
+
+## Architecture
 
 ```mermaid
-graph TD
-    %% Define Colorful Nodes
-    subgraph AI_AGENTS ["🤖 Autonomous Agent Swarm"]
-        Alpha["α Agent (Momentum Strategy)"]
-        Beta["β Agent (Mean Reversion Strategy)"]
-    end
+flowchart LR
+    A["Alpha\nMomentum agent"]:::agentA
+    B["Beta\nMean-reversion agent"]:::agentB
+    Q["Live CSPR/USD quote\nand evidence"]:::data
+    L["OpenRouter\nstructured rationale"]:::ai
+    G["Risk guard\nmax 25% allocation"]:::guard
+    C["Arena Odra V2\nCasper Testnet"]:::chain
+    S["SSE spectator server"]:::server
+    D["Live dashboard\nCSPR.click wallet"]:::ui
 
-    subgraph PRICE_FEED ["📡 Live Feeds"]
-        CSPRPrice["CSPR/USDT Live Price Feed<br/>(CoinGecko / CSPR.cloud)"]
-    end
+    Q --> A
+    Q --> B
+    L --> A
+    L --> B
+    A --> G
+    B --> G
+    G -->|record_trade + hashes| C
+    C -->|confirmed deploy projection| S
+    S --> D
 
-    subgraph CONTRACT_LAYER ["⛓️ Casper Testnet Blockchain"]
-        OdraContract["Arena Odra Smart Contract<br/>(Verifiable Ledger & Rules)"]
-    end
-
-    subgraph VISUALIZATION ["💻 Spectator Layer"]
-        SpectatorServer["Express Server-Sent Events (SSE)"]
-        Dashboard["Sleek Live Dashboard (Port 3001)"]
-    end
-
-    %% Flow Connections
-    CSPRPrice -->|Live Prices| Alpha
-    CSPRPrice -->|Live Prices| Beta
-    Alpha -->|record_trade + Reasoning Hash| OdraContract
-    Beta -->|record_trade + Reasoning Hash| OdraContract
-    OdraContract -->|On-Chain Events / CSPR.cloud| SpectatorServer
-    SpectatorServer -->|Real-Time SSE Events| Dashboard
-
-    %% Style Definitions (Making it Colorful)
-    style Alpha fill:#8B5CF6,stroke:#4C1D95,stroke-width:2px,color:#fff
-    style Beta fill:#00E5CC,stroke:#00B8A5,stroke-width:2px,color:#050B18
-    style CSPRPrice fill:#F59E0B,stroke:#D97706,stroke-width:2px,color:#fff
-    style OdraContract fill:#EF4444,stroke:#B91C1C,stroke-width:2px,color:#fff
-    style SpectatorServer fill:#10B981,stroke:#047857,stroke-width:2px,color:#fff
-    style Dashboard fill:#3B82F6,stroke:#1D4ED8,stroke-width:2px,color:#fff
-
-    classDef default font-family:'Inter',sans-serif;
+    classDef agentA fill:#7c3aed,stroke:#c4b5fd,color:#ffffff
+    classDef agentB fill:#00bfa5,stroke:#5eead4,color:#04111d
+    classDef data fill:#0f766e,stroke:#5eead4,color:#ffffff
+    classDef ai fill:#a16207,stroke:#fde68a,color:#ffffff
+    classDef guard fill:#b91c1c,stroke:#fca5a5,color:#ffffff
+    classDef chain fill:#1d4ed8,stroke:#93c5fd,color:#ffffff
+    classDef server fill:#475569,stroke:#cbd5e1,color:#ffffff
+    classDef ui fill:#4f46e5,stroke:#c4b5fd,color:#ffffff
 ```
 
----
+### Match Lifecycle
 
-## 🏆 Casper Buildathon Qualification Alignment
+```mermaid
+sequenceDiagram
+    participant O as Organizer / Verifier
+    participant A as Alpha key
+    participant B as Beta key
+    participant C as Arena contract
+    participant UI as Dashboard
 
-Arena directly addresses the core goals of the **Casper Innovation Track**:
+    O->>C: create_match(agents, rules hash, duration)
+    O->>C: start_match(match_id)
+    A->>C: record_trade(rationale hash, evidence hash)
+    B->>C: record_trade(rationale hash, evidence hash)
+    C-->>UI: CES event projection through SSE
+    O->>C: settle_match(settlement hash) after end time
+    C-->>UI: winner or deterministic draw
+```
 
-| Hackathon Dimension | Arena Implementation |
-|---|---|
-| **Agentic AI** | Independent autonomous agents that fetch market data, perform strategy analysis, compute decisions, sign transactions, and post verifiable cryptographic reasoning hashes on-chain. |
-| **Decentralized Finance (DeFi)** | Real-time virtual portfolios trading CSPR with logic governed entirely by Casper smart contracts, avoiding central points of failure. |
-| **Real-World Assets (RWA)** | Benchmarking capability with live transaction audits and verified off-chain identities mapped directly to Casper wallets. |
-| **Developer Tools** | Deployed with **Odra Framework**, integrated with **CSPR.live** verification, and powered by live price endpoints. |
+```text
+Alpha momentum agent      Beta mean-reversion agent
+        |                         |
+        +-- OpenRouter rationale -+
+        |                         |
+        +-- quote + evidence -----+
+                                  v
+                       Casper Testnet RPC
+                                  |
+                                  v
+                  Arena Odra V2 contract (WASM)
+             auth checks | CES events | settlement
+                                  |
+                                  v
+          deploy projection + SSE spectator server
+                                  |
+                                  v
+                    live dashboard + CSPR.click
+```
 
----
+## Casper Integration Map
 
-## ⛓️ Live Testnet Proof of Execution
-
-All core transactions are fully live, working, and verifiable on the Casper Testnet. No simulated transaction logs are used for these metrics:
-
-| Transaction / Action | Entry Point | CSPR.live Verification Link |
+| Casper component | How Arena uses it | Proof |
 |---|---|---|
-| **Contract Deployed** | `deploy` | [Verify Deploy on CSPR.live](https://testnet.cspr.live/deploy/f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7) |
-| **Match Created** | `create_match()` | [Verify Create Match on CSPR.live](https://testnet.cspr.live/deploy/3d55be3b4fa45cc2b4037b71753aa28f65a3270f79e0564bb694c72dd1f21cf8) |
-| **Match Started** | `start_match()` | [Verify Start Match on CSPR.live](https://testnet.cspr.live/deploy/87283a8a430a015e50d931bff16ca3723d96b10d8ec054e8f9685d06b2622455) |
-| **Alpha Trade 1** | `record_trade()` | [Verify Alpha Trade on CSPR.live](https://testnet.cspr.live/deploy/2da110df43f21f515469be5e198a6c7c6b99c9495a5484362b48190933e88980) |
-| **Beta Trade 1** | `record_trade()` | [Verify Beta Trade on CSPR.live](https://testnet.cspr.live/deploy/fa0f5d7d72aa6330c62a82f9d5daa43ece305ed4f06f84ee4e0e72027248ce85) |
-| **Match Settled** | `settle_match()` | [Verify Settle Match on CSPR.live](https://testnet.cspr.live/deploy/12f10c3764c65c11c8a2b173b4be1d9ffd89add534ee42a7b42a9077dcde3ab9) |
+| Casper Testnet | Every match lifecycle action is a signed, finalized Testnet deploy. | CSPR.live deploy links below |
+| Odra 2.x | Rust/WASM contract with caller restrictions, timed settlement, and CES events. | `contracts/arena/src/odra_contract.rs` |
+| `casper-js-sdk` 5.0.12 | Loads local Testnet keys, builds stored-contract deploys, signs, submits, retries network errors, and waits for finality. | `agents/shared/arena-client.ts` |
+| CSPR.live | Human-verifiable deploy and contract proof surface. | Proof table below |
+| CSPR.click | Browser wallet connection through its unified wallet client. The current template app ID is local-development only. | `public/wallet.js` |
+| Casper accounts | Alpha, Beta, and verifier have separate Testnet identities; the contract checks the actual caller. | `record_trade` and `settle_match` restrictions |
 
----
+Arena does **not** currently use CSPR.cloud streaming, CSPR.trade MCP, x402, the Casper MCP Server, or a tokenized RWA contract. They must not be selected as implemented technologies in the BUIDL form.
 
-## 🛠️ How to Run a Real Working Demo
+## Final Round Proofs
 
-Follow these instructions to run the project in fully real operational mode using live networks or a local mock verification environment:
+Active V2 contract: `contract-fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41`.
+
+| Transaction | Entry point | CSPR.live proof |
+|---|---|---|
+| Contract deployed | Odra WASM install | [open](https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548) |
+| Match 3 settled (draw) | `settle_match()` | [open](https://testnet.cspr.live/deploy/6f83f9f6655a7c749998d13ffccbe25e8ed07e1187d45f4dcbe1607bc10140c8) |
+| Match 4 created | `create_match()` | [open](https://testnet.cspr.live/deploy/800bba433671b2eb59a422ba8a440c57aa3fa9aad88ef6c1e166a49c096b13a2) |
+| Match 4 started | `start_match()` | [open](https://testnet.cspr.live/deploy/94b50e6e6202c67cfe5f8d2d7ecfe5609f70436acadf942e62297d4bda096396) |
+| Match 4 Alpha decision | `record_trade()` | [open](https://testnet.cspr.live/deploy/7693a5b3ad6575a17bd9e62b29c922f71b1278195cace79e858c40dd5811a7f5) |
+| Match 4 Beta decision | `record_trade()` | [open](https://testnet.cspr.live/deploy/739625e390255342ad9ae03afdf9fc5b9e6f83bb058df60dd4da204175860d89) |
+
+The dashboard exposes the JSON evidence behind each recent decision at `/api/evidence/<evidence_hash>`. It includes the quote payload, model response, guard result, and pre-trade virtual portfolio. The chain contains only hashes, which keeps the on-chain record compact and tamper-evident.
+
+## Smart Contract Guarantees
+
+`contracts/arena/src/odra_contract.rs` enforces the following on Casper Testnet:
+
+- `create_match` stores creator, distinct agent public keys, verifier public key, rules hash, market identifier, budget, and end time.
+- `start_match` accepts only the creator or registered verifier.
+- `record_trade` accepts only one of the registered agent accounts while the match is active.
+- `settle_match` accepts only the registered verifier after the stored end time, and derives the winner from on-chain values. It does not accept caller-provided final scores.
+- CES events provide the proof surface for match creation, start, each decision, and settlement.
+
+## Quick Start
 
 ### Prerequisites
-* **Node.js** v18+
-* **Rust & Cargo** (for building/testing Odra contracts)
-* Add target: `rustup target add wasm32-unknown-unknown`
 
-### Step 1: Clone and Install
+- Node.js 20+
+- Rust stable plus `wasm32-unknown-unknown`
+- Odra CLI and the wasm tools used by `scripts/odra-build.sh`
+- Three funded Casper Testnet PEM keys: Alpha, Beta, and verifier
+
 ```bash
 git clone https://github.com/nikhilraikwar/arena-casper.git
 cd arena-casper
 npm install
+cp .env.example .env
+npm run build
+(cd contracts/arena && cargo odra test)
+npm run dev:demo
 ```
 
-### Step 2: Set Up Environment Variables
-Create a `.env` file in the root directory (based on `.env.example`).
-```bash
-# Set mode to either 'live' (real blockchain integration) or 'mock' (local fast demo)
-ARENA_MODE=live
-ARENA_NETWORK=testnet
-ARENA_CHAIN_NAME=casper-test
+Open `http://localhost:3001` in another terminal with:
 
-# Add the deployed contract details
-ARENA_CONTRACT_HASH=contract-cf8cade69ae3a7839a6d734483db875e57f933c269cf04e008f41262e0407cbb
-ARENA_PACKAGE_HASH=hash-abb291ead610dd8c2571fc71dd32d362e4396d8acb9c121bdb2b3860cc89f691
-TESTNET_RPC=https://node.testnet.casper.network/rpc
-
-# (Required for live transactions) Secret keys paths
-AGENT_ALPHA_KEY_PATH=./keys/agent-alpha.pem
-AGENT_BETA_KEY_PATH=./keys/agent-beta.pem
-VERIFIER_KEY_PATH=./keys/verifier.pem
-```
-> **Security Warning**: The `keys/` directory and `.pem` files are excluded by `.gitignore` to prevent exposing private keys on GitHub. Never commit private key files.
-
-### Step 3: Run the Smart Contract Tests
-Ensure the smart contract compilation and unit tests work:
-```bash
-npm run test
-```
-
-### Step 4: Run the Spectator Server
-Start the Express server that provides API endpoints and SSE streaming for the interface:
 ```bash
 npm run dev:spectator
 ```
-Access the dashboard at: **[http://localhost:3001](http://localhost:3001)**
 
-### Step 5: Execute the Match Live Demo
-To run the automated match lifecycle:
-1. **Create and Start the Match**:
-   ```bash
-   npm run live:create
-   npm run live:start
-   ```
-2. **Launch the Autonomous Agents**:
-   Run both agents concurrently (or in separate terminal tabs) to execute real-time decision flows:
-   ```bash
-   npm run agent:alpha
-   npm run agent:beta
-   ```
-3. **Settle the Match**:
-   Once the match duration ends, trigger the on-chain settlement logic:
-   ```bash
-   npm run live:settle
-   ```
+## Environment Configuration
 
----
+Copy `.env.example` to `.env`. Keep `.env`, `keys/`, and `.arena/` out of Git. The values below are safe to name in documentation, but private PEM contents and `OPENROUTER_API_KEY` must never be shared.
 
-## 🔒 Security Audit & Configuration Safety
+| Variable | Set for a live submission? | Purpose |
+|---|---:|---|
+| `ARENA_MODE=live` | Yes | Enables signed Casper Testnet deploys. Use `mock` only for the local demo. |
+| `ARENA_NETWORK=testnet`, `ARENA_CHAIN_NAME=casper-test` | Yes | Network labels used by the client. |
+| `ARENA_RPC_URL` or `TESTNET_RPC` | Yes | Casper Testnet RPC endpoint. The default is the public Testnet RPC. |
+| `ARENA_CONTRACT_HASH` | Yes | Active Arena V2 contract hash, without a deploy URL. |
+| `ARENA_CONTRACT_DEPLOY_HASH` | Yes for the dashboard | Deploy hash for the active contract, used to render the CSPR.live proof link. |
+| `ARENA_PACKAGE_HASH` | After deployment | Package hash recorded by the deployment script for future contract administration. |
+| `CSPR_LIVE_BASE_URL` | Recommended | Explorer base URL; keep `https://testnet.cspr.live/deploy`. |
+| `ARENA_CREATOR_SECRET_KEY`, `ARENA_ALPHA_SECRET_KEY`, `ARENA_BETA_SECRET_KEY`, `ARENA_VERIFIER_SECRET_KEY` | Yes | PEM paths for the creator, Alpha, Beta, and verifier accounts. The `AGENT_*_KEY_PATH` and `VERIFIER_KEY_PATH` variables are supported aliases. |
+| `ARENA_CREATOR_ACCOUNT`, `ARENA_ALPHA_ACCOUNT`, `ARENA_BETA_ACCOUNT`, `ARENA_VERIFIER_ACCOUNT` | Yes | Matching public-key hex strings. `npm run live:check` validates each against its PEM. |
+| `ARENA_KEY_ALGORITHM=ed25519` | Recommended | Documents the expected Testnet key type. |
+| `MATCH_ID` | Yes | Next on-chain match ID before `live:create`; update it after a successful create. |
+| `MATCH_DURATION_MS`, `MATCH_START_BUDGET`, `MATCH_POLL_MS` | Yes | Match window, virtual starting portfolio (motes), and polling cadence. |
+| `TICK_MS=120000` | Yes | Minimum 2-minute live-agent interval to avoid Testnet finality and nonce collisions. |
+| `DEPLOY_TIMEOUT_MS` | Recommended | Per-deploy finality timeout; default is 90 seconds. |
+| `PAYMENT_MOTES`, `CONTRACT_DEPLOY_PAYMENT_MOTES` | Yes | Payment amounts for contract calls and the contract install deploy. |
+| `AGENT_ITERATIONS` | Optional | Number of decisions run by each agent invocation. |
+| `OPENROUTER_API_KEY`, `AI_MODEL` | Yes | LLM rationale provider and model. `openai/gpt-4o-mini` is the low-cost structured-output default; use `openrouter/free` only for no-cost experimentation. |
+| `ARENA_PUBLIC_URL` | Yes for a hosted demo | Public origin sent as the OpenRouter referrer and used by the web app. |
+| `CSPR_CLICK_APP_ID` | Yes for a hosted demo | Registered production CSPR.click application ID. `csprclick-template` is localhost-only. |
+| `SPECTATOR_PORT` | Optional | Express/SSE server port; default `3001`. |
 
-* **No Credentials Exposed**: All secret files, keys, private PEMs, and local `.env` overrides are explicitly added to `.gitignore`.
-* **Zero Dummy Metrics**: The price feed relies on dynamic live token rates fetched directly from decentralized data streams (CoinGecko / CSPR.cloud API fallbacks).
-* **Transparent Transactions**: Every trade triggers an actual deploy on Casper Testnet containing cryptographically secure payload rationales.
+`CSPR_CLOUD_API_KEY`, CSPR.cloud event URLs, x402 credentials, and CSPR.trade credentials are deliberately not included: this version does not implement those integrations.
 
----
+## Testnet Runbook
 
-## 📄 License
+1. Put funded Ed25519 PEM files in `keys/` and configure their paths and public keys in `.env`. Never commit PEM files or API keys.
+2. Build and deploy the contract:
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details. Built specifically for the **Casper Agentic Buildathon 2026**.
+```bash
+bash scripts/setup-testnet.sh
+```
+
+3. Set `ARENA_MODE=live`, set `MATCH_ID` to the next on-chain counter for this contract, then run the lifecycle in order:
+
+```bash
+npm run live:check
+npm run live:create
+npm run live:start
+npm run live:run
+# wait at least TICK_MS (120 seconds), then repeat live:run to add verified history
+npm run live:run
+# wait until MATCH_DURATION_MS has elapsed
+npm run live:settle
+```
+
+`TICK_MS` remains `120000` in live mode. Agent deploys are sequential, which avoids finality and nonce collisions on Testnet. Agent state is persisted per contract, match, and agent under `.arena/agent-state/`; five verified quotes are required before the deterministic momentum or mean-reversion rules may open a virtual position.
+
+## Wallet Connection
+
+The public landing page and dashboard load the official CSPR.click client at runtime. A user connects with the `Connect Wallet` control and CSPR.click returns the public account key without exposing a private key. `CSPR_CLICK_APP_ID=csprclick-template` is appropriate for localhost development; register a production application ID before publishing a hosted demo.
+
+## Agent and Risk Design
+
+| Component | Implementation |
+|---|---|
+| Alpha | Momentum / short-vs-long trend strategy |
+| Beta | Mean-reversion after drawdown / recovery |
+| Model | OpenRouter structured JSON response; `openai/gpt-4o-mini` is the low-cost default |
+| Risk guard | Maximum 25% allocation and minimum 35 confidence |
+| Market input | Live CSPR/USD quote with the raw response retained in evidence |
+| RWA framing | `CSPR/sCSPR/TREASURY` benchmark identifier only; it is not a tokenized-RWA integration |
+| On-chain state | Casper Testnet, Rust, Odra 2.x, CES events |
+| UI | Express, SSE, vanilla HTML/CSS/JS, Chart.js, CSPR.click |
+
+## Judging Coverage
+
+| Criterion | Arena evidence |
+|---|---|
+| Agentic AI | Separate strategy prompts, independent keys, model rationales, and deterministic safety guard |
+| DeFi / financial use case | Transparent treasury-allocation benchmark with equal starting portfolios |
+| RWA relevance | Treasury-risk benchmark framing, explicitly separated from a future tokenized-RWA integration |
+| Casper integration | Odra contract, real Testnet deploys, CES events, CSPR.live proofs, and CSPR.click wallet connection |
+| Technical rigor | Caller restrictions, verifier-only timed settlement, atomic evidence/cache writes, retries, and deploy finality checks |
+| Demo quality | Live SSE dashboard, evidence links, deploy links, and a complete Testnet lifecycle |
+
+## Demo Script
+
+1. After deploying the reviewed web build, open the hosted landing page and connect a Testnet wallet through CSPR.click.
+2. Open the dashboard and show Match 4, agent portfolios, model rationale evidence, and the confirmed deploy feed.
+3. Open the CSPR.live pages for `create_match`, both agent `record_trade` deploys, and a completed `settle_match`.
+4. Show the Odra entry points and explain that the verifier cannot choose the winner or settle early.
+5. Close with the settled overlay and the evidence JSON for the final decision.
+
+Record a new final-round video after the reviewed web build is deployed. A qualification-round recording that shows the previous contract, old Match 2 placeholders, or the prior landing copy is not suitable evidence for this V2 submission.
+
+## Verification
+
+```bash
+npm run build
+cargo test --manifest-path contracts/arena/Cargo.toml
+(cd contracts/arena && cargo odra test)
+(cd contracts/arena && cargo odra build)
+```
+
+## License
+
+MIT
+
+Built for the Casper Agentic Buildathon 2026 Final Round.
