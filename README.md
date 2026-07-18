@@ -2,9 +2,7 @@
 
 **A verifiable AI agent treasury league on Casper Testnet.** Alpha and Beta run distinct strategies against the same virtual CSPR treasury benchmark; every permitted decision, its model-rationale hash, evidence hash, and final settlement are recorded on-chain.
 
-[Local landing page](http://localhost:3001) | [Local dashboard](http://localhost:3001/dashboard) | [V2 contract deployment](https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548)
-
-> Hosted-demo status: deploy the reviewed commit to Vercel before submitting a public URL. The repository must never claim a hosted URL is current until it serves the active V2 contract and current match feed.
+[Live application](https://arena-on-casper.vercel.app) | [Live dashboard](https://arena-on-casper.vercel.app/dashboard) | [Arena V2 contract](https://testnet.cspr.live/contract/fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41) | [Contract install deploy](https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548)
 
 > Arena is a benchmark and audit layer, not a custody product, exchange, prediction market, or gambling application. The portfolios are virtual. Casper Testnet is the authoritative record of agent authorization, decisions, and settlement.
 
@@ -27,8 +25,9 @@ flowchart LR
     L["OpenRouter\nstructured rationale"]:::ai
     G["Risk guard\nmax 25% allocation"]:::guard
     C["Arena Odra V2\nCasper Testnet"]:::chain
-    S["SSE spectator server"]:::server
-    D["Live dashboard\nCSPR.click wallet"]:::ui
+    R["Render persistent backend\nagent coordinator + evidence disk"]:::server
+    V["Vercel public app\nlanding + dashboard"]:::ui
+    W["CSPR.click\nwallet connection"]:::wallet
 
     Q --> A
     Q --> B
@@ -37,8 +36,9 @@ flowchart LR
     A --> G
     B --> G
     G -->|record_trade + hashes| C
-    C -->|confirmed deploy projection| S
-    S --> D
+    C -->|finalized deploy projection| R
+    R -->|SSE + REST match feed| V
+    W --> V
 
     classDef agentA fill:#7c3aed,stroke:#c4b5fd,color:#ffffff
     classDef agentB fill:#00bfa5,stroke:#5eead4,color:#04111d
@@ -48,6 +48,7 @@ flowchart LR
     classDef chain fill:#1d4ed8,stroke:#93c5fd,color:#ffffff
     classDef server fill:#475569,stroke:#cbd5e1,color:#ffffff
     classDef ui fill:#4f46e5,stroke:#c4b5fd,color:#ffffff
+    classDef wallet fill:#0369a1,stroke:#7dd3fc,color:#ffffff
 ```
 
 ### Match Lifecycle
@@ -83,10 +84,10 @@ Alpha momentum agent      Beta mean-reversion agent
              auth checks | CES events | settlement
                                   |
                                   v
-          deploy projection + SSE spectator server
+       Render persistent backend + SSE spectator server
                                   |
                                   v
-                    live dashboard + CSPR.click
+                     Vercel dashboard + CSPR.click
 ```
 
 ## Casper Integration Map
@@ -97,25 +98,35 @@ Alpha momentum agent      Beta mean-reversion agent
 | Odra 2.x | Rust/WASM contract with caller restrictions, timed settlement, and CES events. | `contracts/arena/src/odra_contract.rs` |
 | `casper-js-sdk` 5.0.12 | Loads local Testnet keys, builds stored-contract deploys, signs, submits, retries network errors, and waits for finality. | `agents/shared/arena-client.ts` |
 | CSPR.live | Human-verifiable deploy and contract proof surface. | Proof table below |
-| CSPR.click | Browser wallet connection through its unified wallet client. The current template app ID is local-development only. | `public/wallet.js` |
+| CSPR.click | Browser wallet connection through its unified wallet client, configured with a registered production application ID. | `public/wallet.js` |
 | Casper accounts | Alpha, Beta, and verifier have separate Testnet identities; the contract checks the actual caller. | `record_trade` and `settle_match` restrictions |
 
 Arena does **not** currently use CSPR.cloud streaming, CSPR.trade MCP, x402, the Casper MCP Server, or a tokenized RWA contract. They must not be selected as implemented technologies in the BUIDL form.
 
 ## Final Round Proofs
 
-Active V2 contract: `contract-fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41`.
+Active V2 contract: [`contract-fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41`](https://testnet.cspr.live/contract/fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41).
 
 | Transaction | Entry point | CSPR.live proof |
 |---|---|---|
-| Contract deployed | Odra WASM install | [open](https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548) |
+| Arena V2 contract | Contract explorer | [open](https://testnet.cspr.live/contract/fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41) |
+| Contract installed | Odra WASM install deploy | [open](https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548) |
 | Match 3 settled (draw) | `settle_match()` | [open](https://testnet.cspr.live/deploy/6f83f9f6655a7c749998d13ffccbe25e8ed07e1187d45f4dcbe1607bc10140c8) |
-| Match 4 created | `create_match()` | [open](https://testnet.cspr.live/deploy/800bba433671b2eb59a422ba8a440c57aa3fa9aad88ef6c1e166a49c096b13a2) |
-| Match 4 started | `start_match()` | [open](https://testnet.cspr.live/deploy/94b50e6e6202c67cfe5f8d2d7ecfe5609f70436acadf942e62297d4bda096396) |
-| Match 4 Alpha decision | `record_trade()` | [open](https://testnet.cspr.live/deploy/7693a5b3ad6575a17bd9e62b29c922f71b1278195cace79e858c40dd5811a7f5) |
-| Match 4 Beta decision | `record_trade()` | [open](https://testnet.cspr.live/deploy/739625e390255342ad9ae03afdf9fc5b9e6f83bb058df60dd4da204175860d89) |
+| Live Match 19 created | `create_match()` | [open](https://testnet.cspr.live/deploy/2dd66bf549d22e1de3dc6b022586ad9c32126dc4fe24d3314762547f59d18dbe) |
+| Live Match 19 started | `start_match()` | [open](https://testnet.cspr.live/deploy/206f88d35390c4345542de735488355f4407f45580594cdca1b2cae8628276cb) |
+| Live Match 19 Alpha BUY | `record_trade()` | [open](https://testnet.cspr.live/deploy/e2eed1407ca42d731f35297cfaa573e7fe176285e9d65c0d9110adde4489ab49) |
+| Live Match 19 Alpha SELL | `record_trade()` | [open](https://testnet.cspr.live/deploy/e03cbdf37e65571159c3ea3fded8250eaac333d9919c76745ec8b1a6bf0477b2) |
+| Live Match 19 Beta decision | `record_trade()` | [open](https://testnet.cspr.live/deploy/2b630330d46e10dbf0969256db8c39e9d717e5758ebb9f71063ee9e2112d52cd) |
+| Live Match 19 settled: Beta wins | `settle_match()` | [open](https://testnet.cspr.live/deploy/e326f3a2afb9332a05bc3625e9cdd818277afa2814d472640e12e440a594d2dd) |
 
 The dashboard exposes the JSON evidence behind each recent decision at `/api/evidence/<evidence_hash>`. It includes the quote payload, model response, guard result, and pre-trade virtual portfolio. The chain contains only hashes, which keeps the on-chain record compact and tamper-evident.
+
+## Deployment
+
+- **Frontend:** [Vercel](https://arena-on-casper.vercel.app) serves the public landing page and live dashboard.
+- **Live agent backend:** [Render](https://arena-live-backend.onrender.com/api/health) runs the persistent spectator service, sequential agent coordinator, SSE event feed, and durable match/evidence projection.
+- **Why two services:** Vercel serves the public web experience; Render provides the persistent process and disk required for long-running agent matches and Server-Sent Events.
+- **Blockchain:** Casper Testnet records match creation, agent decisions, and verifier settlement through the Arena Odra contract.
 
 ## Smart Contract Guarantees
 
@@ -232,16 +243,6 @@ The public landing page and dashboard load the official CSPR.click client at run
 | Casper integration | Odra contract, real Testnet deploys, CES events, CSPR.live proofs, and CSPR.click wallet connection |
 | Technical rigor | Caller restrictions, verifier-only timed settlement, atomic evidence/cache writes, retries, and deploy finality checks |
 | Demo quality | Live SSE dashboard, evidence links, deploy links, and a complete Testnet lifecycle |
-
-## Demo Script
-
-1. After deploying the reviewed web build, open the hosted landing page and connect a Testnet wallet through CSPR.click.
-2. Open the dashboard and show Match 4, agent portfolios, model rationale evidence, and the confirmed deploy feed.
-3. Open the CSPR.live pages for `create_match`, both agent `record_trade` deploys, and a completed `settle_match`.
-4. Show the Odra entry points and explain that the verifier cannot choose the winner or settle early.
-5. Close with the settled overlay and the evidence JSON for the final decision.
-
-Record a new final-round video after the reviewed web build is deployed. A qualification-round recording that shows the previous contract, old Match 2 placeholders, or the prior landing copy is not suitable evidence for this V2 submission.
 
 ## Verification
 
