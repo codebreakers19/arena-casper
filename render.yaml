@@ -1,0 +1,77 @@
+services:
+  - type: web
+    name: arena-live-backend
+    runtime: node
+    plan: starter
+    region: singapore
+    buildCommand: npm ci && npm run build
+    startCommand: npm run spectator
+    healthCheckPath: /api/health
+    autoDeploy: true
+    disk:
+      name: arena-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ARENA_MODE
+        value: live
+      - key: ARENA_NETWORK
+        value: testnet
+      - key: ARENA_CHAIN_NAME
+        value: casper-test
+      - key: ARENA_CONTRACT_HASH
+        value: contract-fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41
+      - key: ARENA_CONTRACT_DEPLOY_HASH
+        value: 1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548
+      - key: ARENA_RPC_URL
+        value: https://node.testnet.casper.network/rpc
+      - key: TESTNET_RPC
+        value: https://node.testnet.casper.network/rpc
+      - key: CSPR_LIVE_BASE_URL
+        value: https://testnet.cspr.live/deploy
+      - key: ARENA_DATA_DIR
+        value: /var/data/arena
+      - key: SPECTATOR_PORT
+        value: "10000"
+      - key: MATCH_ID
+        value: "5"
+      - key: MATCH_DURATION_MS
+        value: "1800000"
+      - key: MATCH_START_BUDGET
+        value: "1000000000000"
+      - key: TICK_MS
+        value: "120000"
+      - key: DEPLOY_TIMEOUT_MS
+        value: "90000"
+      - key: PAYMENT_MOTES
+        value: "50000000000"
+      - key: ARENA_AUTORUN
+        value: "true"
+      - key: ARENA_AUTO_RESTART
+        value: "true"
+      - key: ARENA_COORDINATOR_POLL_MS
+        value: "30000"
+      - key: AI_MODEL
+        value: openai/gpt-4o-mini
+      - key: ARENA_KEY_ALGORITHM
+        value: ed25519
+      - key: ARENA_CREATOR_SECRET_KEY
+        value: /etc/secrets/verifier.pem
+      - key: ARENA_ALPHA_SECRET_KEY
+        value: /etc/secrets/agent-alpha.pem
+      - key: ARENA_BETA_SECRET_KEY
+        value: /etc/secrets/agent-beta.pem
+      - key: ARENA_VERIFIER_SECRET_KEY
+        value: /etc/secrets/verifier.pem
+      - key: ARENA_CREATOR_ACCOUNT
+        value: 020317ed16d9b7a8f6b5b8651383984d5c410b4e4d311e4c4e3899c27ca1b1725043
+      - key: ARENA_ALPHA_ACCOUNT
+        value: 020345aae5b001ef3956c110d84a142bf1f986718d5eab40536b96ba15c087cec9d4
+      - key: ARENA_BETA_ACCOUNT
+        value: 0203994dc9eaae501191e96a24e1d987631652a41601ce805463925393d350f56d57
+      - key: ARENA_VERIFIER_ACCOUNT
+        value: 020317ed16d9b7a8f6b5b8651383984d5c410b4e4d311e4c4e3899c27ca1b1725043
+      - key: OPENROUTER_API_KEY
+        sync: false

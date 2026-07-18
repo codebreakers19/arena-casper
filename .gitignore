@@ -2,8 +2,12 @@ node_modules/
 dist/
 .arena/
 .env
+.env.local
+.env.vercel
+.env.render
 contracts/arena/target/
 *.log
+submissionbuidl.md
 
 # Private key material — NEVER commit
 keys/
