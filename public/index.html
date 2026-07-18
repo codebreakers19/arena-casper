@@ -506,6 +506,7 @@ footer {
 </style>
 </head>
 <body>
+<div id="csprclick-ui-wrapper"><div id="cspr-click-ui"></div></div>
 
 <!-- NAV -->
 <nav>
@@ -516,6 +517,7 @@ footer {
   <div class="nav-right">
     <a href="#how" class="nav-link">How it works</a>
     <a href="#why" class="nav-link">Why Casper</a>
+    <button id="connect-wallet" class="nav-btn" type="button">Connect Wallet</button>
     <a href="dashboard" class="nav-btn">Watch Live ⚡</a>
   </div>
 </nav>
@@ -539,11 +541,11 @@ footer {
       <a href="https://github.com/nikhilraikwar/arena-casper" class="btn-ghost" target="_blank">View on GitHub →</a>
     </div>
 
-    <!-- SCOREBOARD — real on-chain proof data from Match #2 -->
+    <!-- Fallback proof data; replaced by the active match projection when the spectator API is running. -->
     <div class="scoreboard">
       <div class="sb-header">
-        <span class="sb-title">Match #2 · CSPR/USDT · Casper Testnet</span>
-        <span class="sb-live" id="sb-status-pill">SETTLED</span>
+        <span class="sb-title">Match #4 · CSPR/USD · Casper Testnet</span>
+        <span class="sb-live" id="sb-status-pill">ACTIVE</span>
       </div>
 
       <div class="sb-body">
@@ -562,76 +564,76 @@ footer {
           </div>
         </div>
 
-        <!-- Real final scores from settled Match #2 -->
+        <!-- Virtual-portfolio values start at 1,000 CSPR per agent. -->
         <div class="score-row">
           <div class="score-left">
-            <span class="score-num up" id="alpha-score">1,247</span>
-            <span class="score-delta up" id="alpha-delta">▲ +24.7%</span>
+            <span class="score-num up" id="alpha-score">1,000</span>
+            <span class="score-delta up" id="alpha-delta">▲ +0.0%</span>
           </div>
           <div class="score-mid">
             <span class="score-label">CSPR</span>
           </div>
           <div class="score-right">
-            <span class="score-num dn" id="beta-score">967</span>
-            <span class="score-delta dn" id="beta-delta">▼ −3.3%</span>
+            <span class="score-num up" id="beta-score">1,000</span>
+            <span class="score-delta up" id="beta-delta">▲ +0.0%</span>
           </div>
         </div>
 
         <!-- VS bar based on settled values -->
         <div class="vs-bar-track">
-          <div class="vs-bar-a" id="bar-a" style="width:56.3%"></div>
-          <div class="vs-bar-b" id="bar-b" style="width:43.7%"></div>
+          <div class="vs-bar-a" id="bar-a" style="width:50%"></div>
+          <div class="vs-bar-b" id="bar-b" style="width:50%"></div>
         </div>
 
-        <!-- Real on-chain trade feed from Casper Testnet -->
-        <div class="feed-header">On-chain trades</div>
+        <!-- Confirmed Testnet decisions from Match #4. -->
+        <div class="feed-header">Confirmed on-chain decisions</div>
         <div id="feed">
           <div class="feed-row">
             <span class="ft">on-chain</span>
             <span class="fa fa-a">α Alpha</span>
-            <span class="fb buy">BUY</span>
-            <span style="font-size:11px;color:var(--w40)">CSPR/USDT</span>
+            <span class="fb hold">HOLD</span>
+            <span style="font-size:11px;color:var(--w40)">CSPR/USD</span>
             <span class="fv">record_trade()</span>
-            <a href="https://testnet.cspr.live/deploy/2da110df43f21f515469be5e198a6c7c6b99c9495a5484362b48190933e88980" class="fh" target="_blank">2da110…8980</a>
+            <a href="https://testnet.cspr.live/deploy/7693a5b3ad6575a17bd9e62b29c922f71b1278195cace79e858c40dd5811a7f5" class="fh" target="_blank">7693a5…a7f5</a>
           </div>
           <div class="feed-row">
             <span class="ft">on-chain</span>
             <span class="fa fa-b">β Beta</span>
-            <span class="fb sell">SELL</span>
-            <span style="font-size:11px;color:var(--w40)">CSPR/USDT</span>
+            <span class="fb hold">HOLD</span>
+            <span style="font-size:11px;color:var(--w40)">CSPR/USD</span>
             <span class="fv">record_trade()</span>
-            <a href="https://testnet.cspr.live/deploy/fa0f5d7d72aa6330c62a82f9d5daa43ece305ed4f06f84ee4e0e72027248ce85" class="fh" target="_blank">fa0f5d…ce85</a>
+            <a href="https://testnet.cspr.live/deploy/739625e390255342ad9ae03afdf9fc5b9e6f83bb058df60dd4da204175860d89" class="fh" target="_blank">739625…d89</a>
           </div>
           <div class="feed-row">
-            <span class="ft">settled</span>
-            <span class="fa fa-a">α Alpha</span>
-            <span class="fb buy">WIN</span>
-            <span style="font-size:11px;color:var(--w40)">CSPR/USDT</span>
-            <span class="fv">settle_match()</span>
-            <a href="https://testnet.cspr.live/deploy/12f10c3764c65c11c8a2b173b4be1d9ffd89add534ee42a7b42a9077dcde3ab9" class="fh" target="_blank">12f10c…3ab9</a>
+            <span class="ft">started</span>
+            <span class="fa fa-a">Arena</span>
+            <span class="fb hold">LIVE</span>
+            <span style="font-size:11px;color:var(--w40)">CSPR/USD</span>
+            <span class="fv">start_match()</span>
+            <a href="https://testnet.cspr.live/deploy/94b50e6e6202c67cfe5f8d2d7ecfe5609f70436acadf942e62297d4bda096396" class="fh" target="_blank">94b50e…6396</a>
           </div>
         </div>
       </div>
 
       <div class="sb-footer">
-        <span class="sbf-hash">contract-cf8cade69ae3a7839a6d734483db875e57f933c269cf04e008f41262e0407cbb</span>
-        <a href="https://testnet.cspr.live/deploy/f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7" class="sbf-link" target="_blank">Verify on CSPR.live ↗</a>
+        <span class="sbf-hash">contract-fa3af13862e27d3c094d2ffb3a56113fc924e048b445feb64406690652487d41</span>
+        <a href="https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548" class="sbf-link" target="_blank">Verify on CSPR.live ↗</a>
       </div>
     </div>
 
-    <!-- 3 facts — real on-chain statistics from Match #2 -->
+    <!-- Match #4 fallback facts; live values are loaded from the spectator API. -->
     <div class="facts">
       <div class="fact">
         <div class="fact-val"><span class="v-accent" id="f-trades">6</span></div>
-        <div class="fact-lbl">On-chain deploys</div>
+        <div class="fact-lbl">Confirmed decisions</div>
       </div>
       <div class="fact">
         <div class="fact-val"><span class="v-accent">100%</span></div>
-        <div class="fact-lbl">Decisions on-chain</div>
+        <div class="fact-lbl">Decision proofs on-chain</div>
       </div>
       <div class="fact">
         <div class="fact-val"><span class="v-accent">0</span></div>
-        <div class="fact-lbl">Human judges</div>
+        <div class="fact-lbl">Manual scorekeeping</div>
       </div>
     </div>
 
@@ -649,13 +651,13 @@ footer {
       <div class="hc-step">Create</div>
       <span class="hc-icon">🏟️</span>
       <div class="hc-title">Match goes on-chain</div>
-      <div class="hc-text">An Odra contract on Casper Testnet locks both agents and the prize pool. No settings can change after creation.</div>
+      <div class="hc-text">An Odra contract on Casper Testnet records the registered agents, verifier, budget, and match timing for a virtual portfolio match.</div>
     </div>
     <div class="how-card">
       <div class="hc-step">Compete</div>
       <span class="hc-icon">🤖</span>
       <div class="hc-title">AI agents trade</div>
-      <div class="hc-text">Alpha follows momentum. Beta bets on mean-reversion. Claude AI generates each decision. Both run independently with no coordination.</div>
+      <div class="hc-text">Alpha follows momentum. Beta follows mean reversion. A model supplies rationale and risk context while deterministic strategy rules choose the permitted action.</div>
     </div>
     <div class="how-card">
       <div class="hc-step">Prove</div>
@@ -667,7 +669,7 @@ footer {
       <div class="hc-step">Settle</div>
       <span class="hc-icon">🏆</span>
       <div class="hc-title">Chain picks the winner</div>
-      <div class="hc-text">After time runs out, the contract reads final balances and sends the prize to the winner automatically. No judges needed.</div>
+      <div class="hc-text">After the match window closes, the authorized verifier submits the final virtual portfolio values and the contract records Alpha, Beta, or a draw.</div>
     </div>
   </div>
 </div>
@@ -683,26 +685,26 @@ footer {
     <div class="why-grid">
       <div class="why-card">
         <div class="wc-icon">📡</div>
-        <div class="wc-title">Real-time event stream</div>
-        <div class="wc-text">CSPR.cloud's WebSocket pushes every contract event to the dashboard within one second of finality. The live feed is Casper-native.</div>
-        <span class="wc-tag">SSE streaming</span>
+        <div class="wc-title">Verified deploy projection</div>
+        <div class="wc-text">The spectator server publishes events only after its Casper RPC finality check succeeds, then the dashboard receives the local event projection through SSE.</div>
+        <span class="wc-tag">Casper RPC + SSE</span>
       </div>
       <div class="why-card">
         <div class="wc-icon">⛽</div>
         <div class="wc-title">Predictable gas</div>
-        <div class="wc-text">Agents query exact transaction cost before every trade. No failed deploys, no wasted gas — agents can trade at micro-scale.</div>
-        <span class="wc-tag">Entry point costs API</span>
+        <div class="wc-text">Each agent uses a dedicated Testnet account and an explicit payment amount, so every decision is submitted as a separately verifiable deploy.</div>
+        <span class="wc-tag">Dedicated agent accounts</span>
       </div>
       <div class="why-card">
         <div class="wc-icon">🔐</div>
-        <div class="wc-title">Agent-native identity</div>
-        <div class="wc-text">Casper account abstraction gives each agent a first-class on-chain identity. The contract verifies the caller before every trade.</div>
-        <span class="wc-tag">Account abstraction</span>
+        <div class="wc-title">Caller-authorized agents</div>
+        <div class="wc-text">The contract compares the caller public key with the registered Alpha and Beta keys before it accepts a decision.</div>
+        <span class="wc-tag">On-chain authorization</span>
       </div>
       <div class="why-card">
         <div class="wc-icon">🔁</div>
-        <div class="wc-title">Upgradable contracts</div>
-        <div class="wc-text">Match rules can evolve without breaking existing matches. The contract hash stays the same — only the logic updates.</div>
+        <div class="wc-title">WASM contracts with Odra</div>
+        <div class="wc-text">Arena uses an Odra Rust contract with typed entry points, on-chain storage, and emitted lifecycle events that can be independently inspected.</div>
         <span class="wc-tag">Odra framework</span>
       </div>
     </div>
@@ -719,7 +721,7 @@ footer {
       <a href="dashboard" class="btn-primary">⚡ Watch current match</a>
       <a href="https://github.com/nikhilraikwar/arena-casper" class="btn-ghost" target="_blank">Clone the repo →</a>
     </div>
-    <div class="built-on">Built with Casper · Odra · Claude AI · CSPR.cloud</div>
+    <div class="built-on">Built with Casper Testnet · Odra · OpenRouter · TypeScript</div>
   </div>
 </div>
 
@@ -732,7 +734,7 @@ footer {
   <div class="ft-links">
     <a href="dashboard">Live Match</a>
     <a href="https://github.com/nikhilraikwar/arena-casper" target="_blank">GitHub</a>
-    <a href="https://testnet.cspr.live/deploy/f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7" target="_blank">CSPR.live</a>
+    <a href="https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548" target="_blank">CSPR.live</a>
     <a href="https://casper.network" target="_blank">Casper</a>
   </div>
   <div class="ft-right">Casper Agentic Buildathon 2026</div>
@@ -743,7 +745,10 @@ footer {
 // (runs when the dashboard/spectator server is active on localhost:3001)
 async function tryLoadLiveData() {
   try {
-    const res = await fetch('/api/match', { signal: AbortSignal.timeout(3000) });
+    const configRes = await fetch('/api/config', { signal: AbortSignal.timeout(3000) });
+    const config = configRes.ok ? await configRes.json() : null;
+    const apiBase = String(config?.apiBaseUrl || '').replace(/\/$/, '');
+    const res = await fetch(`${apiBase}/api/match`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return;
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) return;
@@ -778,12 +783,12 @@ async function tryLoadLiveData() {
     const statusPill = document.getElementById('sb-status-pill');
     if (statusPill && match.status) statusPill.textContent = match.status.toUpperCase();
     const titleEl = document.querySelector('.sb-title');
-    if (titleEl && match.id) titleEl.textContent = `Match #${match.id} · CSPR/USDT · Casper Testnet`;
+    if (titleEl && match.id) titleEl.textContent = `Match #${match.id} · CSPR/USD · Casper Testnet`;
     const tradeEl = document.getElementById('f-trades');
     if (tradeEl && match.tradeCount != null) tradeEl.textContent = match.tradeCount;
 
     // Fetch and populate last 3 trades dynamically from active match
-    const eventsRes = await fetch('/api/events');
+    const eventsRes = await fetch(`${apiBase}/api/events`);
     if (eventsRes.ok) {
       const events = await eventsRes.json();
       const matchTrades = events
@@ -807,7 +812,7 @@ async function tryLoadLiveData() {
             <span class="ft">on-chain</span>
             <span class="fa ${agentClass}">${agentLabel}</span>
             <span class="fb ${actionClass}">${payload.action}</span>
-            <span style="font-size:11px;color:var(--w40)">CSPR/USDT</span>
+            <span style="font-size:11px;color:var(--w40)">CSPR/USD</span>
             <span class="fv">record_trade()</span>
             <a href="https://testnet.cspr.live/deploy/${payload.deployHash}" class="fh" target="_blank">${payload.deployHash.slice(0, 6)}…${payload.deployHash.slice(-4)}</a>
           `;
@@ -824,7 +829,7 @@ async function tryLoadLiveData() {
             <span class="ft">settled</span>
             <span class="fa ${winner === 'Alpha' ? 'fa-a' : 'fa-b'}">${winner === 'Alpha' ? 'α Alpha' : 'β Beta'}</span>
             <span class="fb buy">WIN</span>
-            <span style="font-size:11px;color:var(--w40)">CSPR/USDT</span>
+            <span style="font-size:11px;color:var(--w40)">CSPR/USD</span>
             <span class="fv">settle_match()</span>
             <a href="https://testnet.cspr.live/deploy/${settleEvent.deployHash}" class="fh" target="_blank">${settleEvent.deployHash.slice(0, 6)}…${settleEvent.deployHash.slice(-4)}</a>
           `;
@@ -904,5 +909,6 @@ factsObserver.observe(document.querySelector('.facts'));
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script src="/wallet.js"></script>
 </body>
 </html>

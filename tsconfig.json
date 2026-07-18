@@ -13,7 +13,8 @@
   "include": [
     "agents/**/*.ts",
     "scripts/**/*.ts",
-    "spectator/**/*.ts"
+    "spectator/**/*.ts",
+    "api/**/*.ts"
   ],
   "exclude": [
     "node_modules",

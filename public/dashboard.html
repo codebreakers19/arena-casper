@@ -127,6 +127,7 @@
   .btn-sm:hover { background: var(--w15); }
   .btn-sm.primary { background: var(--violet); border-color: var(--violet); }
   .btn-sm.primary:hover { background: var(--violet-l); }
+  .btn-sm:focus-visible, .db-hash:focus-visible, .settlement-link:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 
   /* ── MAIN LAYOUT ────────────────────────────────── */
   .main {
@@ -225,12 +226,20 @@
   .sr-val.amber { color: var(--amber); }
 
   /* mini bar chart */
-  .mini-bars { display: flex; align-items: flex-end; gap: 3px; height: 40px; margin: .75rem 0; }
+  .mini-bars { display: flex; align-items: flex-end; gap: 5px; min-height: 48px; margin: .5rem 0 .75rem; }
   .mini-bar {
-    width: 8px; flex-shrink: 0;
+    width: 12px; min-height: 8px; flex-shrink: 0;
     border-radius: 3px 3px 0 0;
-    transition: height .4s ease;
+    transition: height .4s ease, opacity .2s ease;
+    box-shadow: 0 0 10px rgba(240,244,255,.18);
   }
+  .mini-bar.buy { background: var(--green); box-shadow: 0 0 12px rgba(0,229,160,.45); }
+  .mini-bar.sell { background: var(--red); box-shadow: 0 0 12px rgba(255,77,106,.4); }
+  .mini-bar.hold { background: var(--amber); box-shadow: 0 0 12px rgba(245,158,11,.35); }
+  .trade-history-key { display:flex; gap:8px; margin-top:4px; font-family:var(--font-m); font-size:8px; color:var(--w60); }
+  .trade-history-key span { display:inline-flex; align-items:center; gap:4px; }
+  .trade-history-key i { width:7px; height:7px; border-radius:50%; display:inline-block; }
+  .empty-state { display:grid; place-items:center; min-height:70px; color:var(--w30); font-family:var(--font-m); font-size:10px; text-align:center; padding:1rem; }
 
   /* last decision box */
   .decision-box {
@@ -453,6 +462,13 @@
     background: var(--violet); color: var(--white);
     font-size: 12px; font-weight: 700; text-decoration: none;
   }
+  .settlement-close {
+    position: absolute; top: 10px; right: 10px;
+    width: 32px; height: 32px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--bg-3); color: var(--w70);
+    cursor: pointer; font-size: 20px; line-height: 1;
+  }
+  .settlement-close:hover { color: var(--white); border-color: var(--border-v); }
 
   /* ── SECTION WITHIN PANELS ──────────────────────── */
   .p-section {
@@ -514,6 +530,7 @@
 </style>
 </head>
 <body>
+<div id="csprclick-ui-wrapper"><div id="cspr-click-ui"></div></div>
 
 <!-- TOP BAR -->
 <header class="topbar">
@@ -523,7 +540,7 @@
       Arena
     </a>
     <div class="tb-sep"></div>
-    <div class="match-id">Match <span id="hdr-match-id">#0042</span> · CSPR/USDT</div>
+    <div class="match-id">Match <span id="hdr-match-id">#0042</span> · CSPR/USD</div>
   </div>
   <div class="tb-center">
     <div class="score-pill">
@@ -537,8 +554,10 @@
     </div>
   </div>
   <div class="tb-right">
-    <div class="block-counter">Block <span id="block-num">3,847,201</span></div>
+    <div class="block-counter">Event <span id="block-num">0</span></div>
     <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <button id="show-settlement" class="btn-sm" type="button" hidden>Settlement proof</button>
+    <button id="connect-wallet" class="btn-sm primary" type="button" aria-live="polite">Connect Wallet</button>
 
   </div>
 </header>
@@ -581,16 +600,8 @@
       <!-- mini bars -->
       <div class="p-section">
         <div style="font-family:var(--font-m);font-size:9px;color:var(--w30);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Trade History</div>
-        <div class="mini-bars" id="alpha-bars">
-          <div class="mini-bar" style="height:60%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:80%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:40%;background:var(--red)"></div>
-          <div class="mini-bar" style="height:90%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:55%;background:var(--w30)"></div>
-          <div class="mini-bar" style="height:70%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:35%;background:var(--red)"></div>
-          <div class="mini-bar" style="height:95%;background:var(--green)"></div>
-        </div>
+        <div class="mini-bars" id="alpha-bars"><div class="empty-state">No confirmed Alpha decisions yet</div></div>
+        <div class="trade-history-key"><span><i style="background:var(--green)"></i>BUY</span><span><i style="background:var(--red)"></i>SELL</span><span><i style="background:var(--amber)"></i>HOLD</span></div>
       </div>
 
       <!-- last decision -->
@@ -600,6 +611,7 @@
           <span class="db-action db-hold" id="alpha-action">Awaiting Match...</span>
           <div class="db-reason" id="alpha-reason">Agent has not executed any trades yet.</div>
           <a href="#" class="db-hash" id="alpha-hash" target="_blank" style="display:none;">tx: Awaiting...</a>
+          <a href="#" class="db-hash" id="alpha-evidence" target="_blank" style="display:none; color:var(--teal)">evidence</a>
         </div>
       </div>
     </div>
@@ -613,7 +625,7 @@
       <div class="timer-section">
         <div class="timer-block">
           <div class="timer-val" id="timer-blocks">28</div>
-          <div class="timer-label">Blocks Left</div>
+          <div class="timer-label">Time Left</div>
         </div>
         <div class="timer-sep"></div>
         <div class="timer-block">
@@ -660,8 +672,8 @@
       <!-- CONTRACT INFO -->
       <div class="contract-box" style="margin-bottom:.75rem">
         <div class="cb-label">Arena Contract · Casper Testnet</div>
-        <div class="cb-hash" id="contract-hash-display">contract-cf8cade69ae3a7839a6d734483db875e57f933c269cf04e008f41262e0407cbb</div>
-        <a href="https://testnet.cspr.live/deploy/f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7" target="_blank" class="cb-link">Deploy on CSPR.live ↗</a>
+        <div class="cb-hash" id="contract-hash-display">Loading verified contract...</div>
+        <a id="contract-deploy-link" href="#" target="_blank" class="cb-link" hidden>Open deployment on CSPR.live</a>
       </div>
 
       <!-- DUAL FEED & LOG GRID -->
@@ -694,7 +706,7 @@
                 <span class="ti-time">14:32:08</span>
                 <span class="ti-agent alpha">α Alpha</span>
                 <span class="ti-badge ti-buy">BUY</span>
-                <span class="ti-pair">CSPR/USDT</span>
+                <span class="ti-pair">CSPR/USD</span>
                 <span class="onchain-tag">ON-CHAIN</span>
               </div>
               <div class="ti-row2">
@@ -707,7 +719,7 @@
                 <span class="ti-time">14:31:44</span>
                 <span class="ti-agent beta">β Beta</span>
                 <span class="ti-badge ti-sell">SELL</span>
-                <span class="ti-pair">CSPR/USDT</span>
+                <span class="ti-pair">CSPR/USD</span>
                 <span class="onchain-tag">ON-CHAIN</span>
               </div>
               <div class="ti-row2">
@@ -757,16 +769,8 @@
       <!-- mini bars -->
       <div class="p-section">
         <div style="font-family:var(--font-m);font-size:9px;color:var(--w30);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Trade History</div>
-        <div class="mini-bars" id="beta-bars">
-          <div class="mini-bar" style="height:40%;background:var(--red)"></div>
-          <div class="mini-bar" style="height:60%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:55%;background:var(--w30)"></div>
-          <div class="mini-bar" style="height:35%;background:var(--red)"></div>
-          <div class="mini-bar" style="height:80%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:90%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:70%;background:var(--green)"></div>
-          <div class="mini-bar" style="height:95%;background:var(--green)"></div>
-        </div>
+        <div class="mini-bars" id="beta-bars"><div class="empty-state">No confirmed Beta decisions yet</div></div>
+        <div class="trade-history-key"><span><i style="background:var(--green)"></i>BUY</span><span><i style="background:var(--red)"></i>SELL</span><span><i style="background:var(--amber)"></i>HOLD</span></div>
       </div>
 
       <!-- last decision -->
@@ -776,6 +780,7 @@
           <span class="db-action db-hold" id="beta-action">Awaiting Match...</span>
           <div class="db-reason" id="beta-reason">Agent has not executed any trades yet.</div>
           <a href="#" class="db-hash" id="beta-hash" target="_blank" style="display:none;">tx: Awaiting...</a>
+          <a href="#" class="db-hash" id="beta-evidence" target="_blank" style="display:none; color:var(--teal)">evidence</a>
         </div>
       </div>
     </div>
@@ -785,6 +790,7 @@
 
 <div class="settlement-overlay" id="settlement-overlay" aria-hidden="true">
   <div class="settlement-modal" role="dialog" aria-modal="true" aria-labelledby="settlement-title">
+    <button class="settlement-close" id="close-settlement" type="button" aria-label="Close settlement proof">&times;</button>
     <div class="settlement-kicker">settle_match() confirmed</div>
     <div class="settlement-title" id="settlement-title">Alpha Wins</div>
     <div class="settlement-scores">
@@ -799,9 +805,9 @@
 <div class="bottom-bar">
   <div class="bb-item"><span class="bb-label">Network</span><span class="bb-val">Casper Testnet</span></div>
   <div class="bb-sep"></div>
-  <div class="bb-item"><span class="bb-label">CSPR/USDT</span><span class="bb-val green" id="bb-price">$0.0412</span></div>
+  <div class="bb-item"><span class="bb-label">CSPR/USD</span><span class="bb-val green" id="bb-price">$0.0412</span></div>
   <div class="bb-sep"></div>
-  <div class="bb-item"><span class="bb-label">Block</span><span class="bb-val amber" id="bb-block">3,847,201</span></div>
+  <div class="bb-item"><span class="bb-label">Event sequence</span><span class="bb-val amber" id="bb-block">0</span></div>
   <div class="bb-sep"></div>
   <div class="bb-item"><span class="bb-label">Leader</span><span class="bb-val green" id="bb-leader">α Alpha +24.7%</span></div>
   <div class="bb-sep"></div>
@@ -811,7 +817,7 @@
   <div class="bb-sep"></div>
   <div class="bb-item bb-contract">
     <span class="bb-label">Contract</span>
-    <span class="bb-val" style="color:var(--violet-l)"><a href="https://testnet.cspr.live/deploy/f7a9bf79a9c8694dde2a5e1e6b725cead3bb5bc8a4fbb3bd15d05e2d0f9ae7e7" target="_blank" style="color:inherit; text-decoration:none;">contract-cf8ca…7cbb</a></span>
+    <span class="bb-val" style="color:var(--violet-l)"><a href="https://testnet.cspr.live/deploy/1a34e5229780188d9eedb173c5d71900d0cfff46f4755ac34f180359309db548" target="_blank" style="color:inherit; text-decoration:none;">contract-fa3af…7d41</a></span>
   </div>
 
 <script>
@@ -822,6 +828,12 @@ let totalTrades = 0, alphaTrades = 0, betaTrades = 0;
 let alphaWins = 0, betaWins = 0;
 let startBudget = 1000000000000; // default 1000 CSPR (10^9 motes)
 let matchState = null;
+let arenaApiBase = "";
+
+function arenaApi(path) {
+  return `${arenaApiBase}${path}`;
+}
+let settlementModalOpen = false;
 
 let chartLabels = [];
 let chartAlpha = [];
@@ -926,15 +938,21 @@ function formatCSPR(valueInMotes) {
   return Math.round(valueInMotes / 1_000_000_000).toLocaleString();
 }
 
+function formatDuration(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 function formatDelta(motesVal, startMotes) {
   const diff = motesVal - startMotes;
   const pct = ((diff / startMotes) * 100).toFixed(1);
   return `${diff >= 0 ? '▲ +' : '▼ '}${Math.abs(pct)}%`;
 }
 
-function addTradeFeed(trade) {
+function addTradeFeed(trade, eventTimestamp) {
   const feed = document.getElementById('trade-feed');
-  const now = new Date(trade.blockTime * 1000 || Date.now()).toLocaleTimeString('en-GB', {hour12:false});
+  const now = new Date(eventTimestamp || Date.now()).toLocaleTimeString('en-GB', {hour12:false});
   const item = document.createElement('div');
   item.className = 'trade-item';
   const isAlpha = trade.agentId === 'alpha';
@@ -948,7 +966,7 @@ function addTradeFeed(trade) {
       <span class="ti-time">${now}</span>
       <span class="ti-agent ${isAlpha ? 'alpha' : 'beta'}">${isAlpha ? 'α Alpha' : 'β Beta'}</span>
       <span class="ti-badge ${badgeCls}">${trade.action}</span>
-      <span class="ti-pair">CSPR/USDT</span>
+      <span class="ti-pair">CSPR/USD</span>
       <span class="onchain-tag">ON-CHAIN</span>
     </div>
     <div class="ti-row2">
@@ -1011,13 +1029,15 @@ function renderState() {
   document.getElementById('beta-delta').style.color = betaVal >= startBudget ? 'var(--green)' : 'var(--red)';
 
   // Timer & Blocks progress
-  const duration = matchState.endBlock - matchState.startBlock;
-  const currentProgressBlock = Math.max(0, blockNum - matchState.startBlock);
-  blocksLeft = Math.max(0, matchState.endBlock - blockNum);
-  const progressPct = duration > 0 ? Math.min(100, Math.round((currentProgressBlock / duration) * 100)) : 0;
+  const hasLiveClock = Number.isFinite(matchState.startTimeMs) && Number.isFinite(matchState.endTimeMs);
+  const duration = hasLiveClock ? matchState.endTimeMs - matchState.startTimeMs : matchState.endBlock - matchState.startBlock;
+  const elapsed = hasLiveClock ? Math.max(0, Date.now() - matchState.startTimeMs) : Math.max(0, blockNum - matchState.startBlock);
+  const remaining = hasLiveClock ? Math.max(0, matchState.endTimeMs - Date.now()) : Math.max(0, matchState.endBlock - blockNum);
+  blocksLeft = hasLiveClock ? Math.ceil(remaining / 1000) : remaining;
+  const progressPct = duration > 0 ? Math.min(100, Math.round((elapsed / duration) * 100)) : 0;
 
   document.getElementById('block-num').textContent = blockNum.toLocaleString();
-  document.getElementById('timer-blocks').textContent = blocksLeft;
+  document.getElementById('timer-blocks').textContent = hasLiveClock ? formatDuration(blocksLeft) : blocksLeft;
   document.getElementById('timer-blocks').className = 'timer-val' + (blocksLeft < 5 ? ' urgent' : '');
   document.getElementById('timer-trades').textContent = matchState.tradeCount;
   document.getElementById('pb-pct').textContent = progressPct + '%';
@@ -1043,7 +1063,7 @@ function renderState() {
   // Update Split percentage
   updateVsBar();
 
-  // Handle Match Settlement Overlay
+  // Settlement is available as proof, but never blocks investigation of agent data.
   if (matchState.status === 'settled') {
     const winnerName = matchState.valueA === matchState.valueB 
       ? 'Draw' 
@@ -1062,9 +1082,14 @@ function renderState() {
       settleLink.href = `https://testnet.cspr.live/deploy/${matchState.settleDeployHash}`;
     }
     
-    document.getElementById('settlement-overlay').classList.add('show');
-    document.getElementById('settlement-overlay').setAttribute('aria-hidden', 'false');
+    document.getElementById('show-settlement').hidden = false;
+    if (settlementModalOpen) {
+      document.getElementById('settlement-overlay').classList.add('show');
+      document.getElementById('settlement-overlay').setAttribute('aria-hidden', 'false');
+    }
   } else {
+    document.getElementById('show-settlement').hidden = true;
+    settlementModalOpen = false;
     document.getElementById('settlement-overlay').classList.remove('show');
     document.getElementById('settlement-overlay').setAttribute('aria-hidden', 'true');
   }
@@ -1078,7 +1103,25 @@ async function bootstrap() {
 
   // Hide settlement overlay
   const overlay = document.getElementById('settlement-overlay');
-  if (overlay) overlay.classList.remove('active');
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+
+  const configRes = await fetch('/api/config');
+  if (configRes.ok) {
+    const config = await configRes.json();
+    arenaApiBase = String(config.apiBaseUrl || "").replace(/\/$/, "");
+    const hash = config.contractHash;
+    if (hash) {
+      document.getElementById('contract-hash-display').textContent = hash;
+      const deployLink = document.getElementById('contract-deploy-link');
+      if (config.contractDeployHash) {
+        deployLink.href = `https://testnet.cspr.live/deploy/${config.contractDeployHash}`;
+        deployLink.hidden = false;
+      }
+    }
+  }
 
   // Reset decision boxes
   const alphaAction = document.getElementById('alpha-action');
@@ -1097,7 +1140,7 @@ async function bootstrap() {
   }
 
   // Get active match state
-  const matchRes = await fetch('/api/match');
+  const matchRes = await fetch(arenaApi('/api/match'));
   if (!matchRes.ok) return;
   const matchType = matchRes.headers.get("content-type");
   if (!matchType || !matchType.includes("application/json")) {
@@ -1108,7 +1151,7 @@ async function bootstrap() {
   if (!matchState || !matchState.id) return;
 
   // Get past events
-  const eventsRes = await fetch('/api/events');
+  const eventsRes = await fetch(arenaApi('/api/events'));
   if (eventsRes.ok) {
     const eventsType = eventsRes.headers.get("content-type");
     if (eventsType && eventsType.includes("application/json")) {
@@ -1158,28 +1201,26 @@ function handleEvent(event, triggerRender = true) {
   
   else if (event.type === 'match_started') {
     blockNum = payload.startBlock || blockNum;
-    addMatchLog('STARTED', `Match #${payload.id} starts at Block ${blockNum}.`);
+    addMatchLog('STARTED', `Match #${payload.id} start confirmed on Casper Testnet.`);
   } 
   
   else if (event.type === 'trade_recorded') {
     blockNum = payload.blockTime || blockNum;
     const isAlpha = payload.agentId === 'alpha';
-    const cleanTime = new Date(payload.blockTime * 1000 || Date.now()).toLocaleTimeString('en-GB', {hour12:false});
+    const cleanTime = new Date(event.timestamp || Date.now()).toLocaleTimeString('en-GB', {hour12:false});
     
     // Update Trade History mini-bars
     const barsContainer = document.getElementById(`${payload.agentId}-bars`);
     if (barsContainer) {
       const bar = document.createElement('div');
-      bar.className = 'mini-bar';
+      bar.className = `mini-bar ${payload.action.toLowerCase()}`;
+      bar.title = `${payload.action} - confirmed Testnet trade`;
       if (payload.action === 'BUY') {
         bar.style.height = '80%';
-        bar.style.background = 'var(--green)';
       } else if (payload.action === 'SELL') {
         bar.style.height = '60%';
-        bar.style.background = 'var(--red)';
       } else {
-        bar.style.height = '35%';
-        bar.style.background = 'var(--w30)';
+        bar.style.height = '48%';
       }
       barsContainer.appendChild(bar);
       if (barsContainer.children.length > 10) {
@@ -1200,6 +1241,12 @@ function handleEvent(event, triggerRender = true) {
       document.getElementById('alpha-action').className = `db-action db-${payload.action.toLowerCase()}`;
       document.getElementById('alpha-reason').textContent = payload.reasoning || '';
       
+      const evidenceLink = document.getElementById('alpha-evidence');
+      if (evidenceLink && payload.evidenceUrl) {
+        evidenceLink.href = payload.evidenceUrl.startsWith('http') ? payload.evidenceUrl : arenaApi(payload.evidenceUrl);
+        evidenceLink.textContent = `evidence: ${payload.evidenceHash.slice(0, 12)}...${payload.evidenceHash.slice(-4)}`;
+        evidenceLink.style.display = 'block';
+      }
       const hashLink = document.getElementById('alpha-hash');
       if (hashLink) {
         hashLink.textContent = `tx: ${payload.deployHash.slice(0, 12)}…${payload.deployHash.slice(-4)}`;
@@ -1219,6 +1266,12 @@ function handleEvent(event, triggerRender = true) {
       document.getElementById('beta-action').className = `db-action db-${payload.action.toLowerCase()}`;
       document.getElementById('beta-reason').textContent = payload.reasoning || '';
       
+      const evidenceLink = document.getElementById('beta-evidence');
+      if (evidenceLink && payload.evidenceUrl) {
+        evidenceLink.href = payload.evidenceUrl.startsWith('http') ? payload.evidenceUrl : arenaApi(payload.evidenceUrl);
+        evidenceLink.textContent = `evidence: ${payload.evidenceHash.slice(0, 12)}...${payload.evidenceHash.slice(-4)}`;
+        evidenceLink.style.display = 'block';
+      }
       const hashLink = document.getElementById('beta-hash');
       if (hashLink) {
         hashLink.textContent = `tx: ${payload.deployHash.slice(0, 12)}…${payload.deployHash.slice(-4)}`;
@@ -1227,7 +1280,7 @@ function handleEvent(event, triggerRender = true) {
       }
     }
 
-    addTradeFeed(payload);
+    addTradeFeed(payload, event.timestamp);
     addMatchLog(cleanTime, `Agent ${isAlpha ? 'Alpha' : 'Beta'} performed ${payload.action} for ${formatCSPR(payload.amount)} CSPR.`);
 
     // Push into Live Chart Data
@@ -1250,7 +1303,7 @@ function handleEvent(event, triggerRender = true) {
 
   if (triggerRender && matchState) {
     // Dynamically query latest match state to align values
-    fetch('/api/match').then(r => r.json()).then(latest => {
+    fetch(arenaApi('/api/match')).then(r => r.json()).then(latest => {
       matchState = latest;
       renderState();
     });
@@ -1264,7 +1317,7 @@ function initSSE() {
   if (sseSource) {
     sseSource.close();
   }
-  sseSource = new EventSource('/events');
+  sseSource = new EventSource(arenaApi('/events'));
   
   sseSource.addEventListener('match_created', (e) => {
     const ev = JSON.parse(e.data);
@@ -1317,11 +1370,31 @@ function initSSE() {
 }
 
 bootstrap();
+setInterval(() => renderState(), 1_000);
+
+document.getElementById('show-settlement').addEventListener('click', () => {
+  settlementModalOpen = true;
+  renderState();
+});
+document.getElementById('close-settlement').addEventListener('click', () => {
+  settlementModalOpen = false;
+  document.getElementById('settlement-overlay').classList.remove('show');
+  document.getElementById('settlement-overlay').setAttribute('aria-hidden', 'true');
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key.toLowerCase() !== 'r' || event.metaKey || event.ctrlKey || event.altKey) return;
+  const target = event.target;
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable) return;
+  event.preventDefault();
+  bootstrap();
+});
 </script>
 
 <script>
   window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
+<script src="/wallet.js"></script>
 </body>
 </html>
