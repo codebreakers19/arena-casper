@@ -2,6 +2,7 @@ import { createArenaClient } from "../agents/shared/arena-client.js";
 import { runAgent } from "../agents/shared/agent-runner.js";
 import { agentAccount, loadConfig } from "../agents/shared/config.js";
 import { sha256 } from "../agents/shared/hash.js";
+import { assertArenaDataWritable } from "../agents/shared/storage.js";
 import type { MatchState } from "../agents/shared/types.js";
 
 export function startMatchCoordinator(): void {
@@ -20,6 +21,8 @@ export function startMatchCoordinator(): void {
     if (running) return;
     running = true;
     try {
+      // Never submit a deploy until the local proof projection can be persisted.
+      await assertArenaDataWritable();
       const client = createArenaClient(config);
       let match = await client.getLatestMatch();
       if (!match || (match.status === "settled" && autoRestart)) {

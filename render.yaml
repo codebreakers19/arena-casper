@@ -50,7 +50,7 @@ services:
       - key: ARENA_AUTORUN
         value: "true"
       - key: ARENA_AUTO_RESTART
-        value: "true"
+        value: "false"
       - key: ARENA_COORDINATOR_POLL_MS
         value: "30000"
       - key: AI_MODEL
