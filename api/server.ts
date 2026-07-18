@@ -49,6 +49,28 @@ app.get("/api/match", async (_req, res) => {
   });
 });
 
+app.get("/api/match/:matchId", async (req, res) => {
+  const matchId = Number(req.params.matchId);
+  if (!Number.isSafeInteger(matchId) || matchId < 1) {
+    res.status(400).json({ error: { code: "invalid_input", message: "Match ID must be a positive integer." } });
+    return;
+  }
+
+  const match = await client.getMatch(matchId);
+  if (!match) {
+    res.status(404).json({ error: { code: "not_found", message: `Match ${matchId} is not available on this server.` } });
+    return;
+  }
+
+  const started = (await client.listEvents(0)).find((event) => event.matchId === match.id && event.type === "match_started");
+  const startTimeMs = started ? Date.parse(started.timestamp) : undefined;
+  res.json({
+    ...match,
+    startTimeMs,
+    endTimeMs: startTimeMs ? startTimeMs + config.matchDurationMs : undefined
+  });
+});
+
 app.get("/api/events", async (_req, res) => {
   res.json(await client.listEvents(0));
 });
