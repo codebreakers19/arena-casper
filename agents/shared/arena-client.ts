@@ -322,7 +322,7 @@ class LiveArenaClient implements ArenaClient {
     header.account = key.publicKey;
     header.chainName = this.config.chainName;
     // Fix for "Invalid Deploy" on cloud providers due to clock drift:
-    header.timestamp = new sdk.Timestamp(Date.now() - 120_000);
+    header.timestamp = new sdk.Timestamp(new Date(Date.now() - 120_000));
     const payment = sdk.ExecutableDeployItem.standardPayment(
       process.env.PAYMENT_MOTES ?? process.env.ARENA_PAYMENT_MOTES ?? "50000000000",
     );
